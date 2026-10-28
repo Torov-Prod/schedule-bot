@@ -224,6 +224,8 @@ async def main() -> None:
             await message.answer(f"Не понял дату. Пример: /tasks 28.10\n{e}")
             return
 
+        # list_plans already tries HTTP then falls back — do not call api_available
+        # again (extra DNS timeout made /tasks feel stuck on Fly).
         plans = await asyncio.to_thread(cal.list_plans, day)
         from datetime import date as date_cls
 
@@ -232,7 +234,11 @@ async def main() -> None:
         except ValueError:
             label = day
 
-        via = "API календаря" if await asyncio.to_thread(cal.api_available) else "общий файл календаря"
+        api_url = os.getenv("CALENDAR_API_URL", "")
+        if "127.0.0.1" in api_url or "localhost" in api_url or not api_url:
+            via = "локальный store (календарь API недоступен с хоста)"
+        else:
+            via = "календарь / store"
         text = cal.format_plans(plans, f"📋 Задачи на {label}\n({via})")
         await message.answer(text)
 

@@ -104,7 +104,8 @@ def _http(method: str, path: str, body: dict[str, Any] | None = None) -> dict[st
     if key:
         headers["X-API-Key"] = key
     req = Request(url, data=data, headers=headers, method=method)
-    with urlopen(req, timeout=8) as resp:
+    # Short timeout: Fly has no private calendar DNS; don't block Telegram handlers.
+    with urlopen(req, timeout=2) as resp:
         raw = resp.read().decode("utf-8")
         return json.loads(raw) if raw else {}
 
